@@ -27,24 +27,23 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicReference;
 
-public class ChestLogs implements ModInitializer
-{
+public class ChestLogs implements ModInitializer {
 	public static String chestClosedBy = "";
-    public static final Logger LOGGER = LoggerFactory.getLogger("chest-log");
+	public static final Logger LOGGER = LoggerFactory.getLogger("chest-log");
 	List<String> folderPaths = new ArrayList<>();
 
 	@Override
-	public void onInitialize()
-	{
-		ServerLifecycleEvents.SERVER_STARTED.register((server ->
-		{
+	public void onInitialize() {
+		ServerLifecycleEvents.SERVER_STARTED.register((server -> {
 			folderPaths.add(server.getSavePath(WorldSavePath.ROOT).resolve("ChestLog").toString());
-			folderPaths.add(server.getSavePath(WorldSavePath.ROOT).resolve("ChestLog" + File.separator + "Overworld").toString());
-			folderPaths.add(server.getSavePath(WorldSavePath.ROOT).resolve("ChestLog" + File.separator + "The Nether").toString());
-			folderPaths.add(server.getSavePath(WorldSavePath.ROOT).resolve("ChestLog" + File.separator + "The End").toString());
+			folderPaths
+					.add(server.getSavePath(WorldSavePath.ROOT).resolve("ChestLog" + File.separator + "Overworld").toString());
+			folderPaths
+					.add(server.getSavePath(WorldSavePath.ROOT).resolve("ChestLog" + File.separator + "The Nether").toString());
+			folderPaths
+					.add(server.getSavePath(WorldSavePath.ROOT).resolve("ChestLog" + File.separator + "The End").toString());
 
-			for(String folderPath : folderPaths)
-			{
+			for (String folderPath : folderPaths) {
 				File folder = new File(folderPath);
 
 				if (!folder.exists()) {
@@ -55,8 +54,7 @@ public class ChestLogs implements ModInitializer
 			}
 		}));
 
-		UseBlockCallback.EVENT.register((player, world, hand, hitResult) ->
-		{
+		UseBlockCallback.EVENT.register((player, world, hand, hitResult) -> {
 			chestClosedBy = "";
 			BlockPos blockPos = hitResult.getBlockPos();
 			BlockState blockState = world.getBlockState(blockPos);
@@ -64,36 +62,33 @@ public class ChestLogs implements ModInitializer
 			BlockEntity blockEntity = world.getBlockEntity(blockPos);
 			ChestBlockEntity secondChest = Utils.getSecondChest(blockState, blockEntity, world);
 
-			if(!(blockEntity instanceof LootableContainerBlockEntity))
+			if (!(blockEntity instanceof LootableContainerBlockEntity))
 				return ActionResult.PASS;
 
 			String blockstr = block.getName().getString();
 
 			String dimStr = Utils.getDimString(world.getDimensionEntry());
 
-			AtomicReference<String> savePath = new AtomicReference<>(folderPaths.get(0) + File.separator + dimStr + File.separator + blockstr + " " + blockPos.getX() + " " + blockPos.getY() + " " + blockPos.getZ());
+			AtomicReference<String> savePath = new AtomicReference<>(folderPaths.get(0) + File.separator + dimStr
+					+ File.separator + blockstr + " " + blockPos.getX() + " " + blockPos.getY() + " " + blockPos.getZ());
 
 			List<ItemStack> itemsBefore = Utils.getItems((LootableContainerBlockEntity) blockEntity);
-			if(secondChest != null)
+			if (secondChest != null)
 				itemsBefore.addAll(Utils.getItems(secondChest));
 			List<String> itemsBeforeStr = Utils.itemStackListToStrList(itemsBefore);
 
-			CompletableFuture<Void> future = CompletableFuture.runAsync(() ->
-			{
-				while (!chestClosedBy.equals(player.getName().toString()))
-				{
-					try
-					{
+			CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
+				while (!chestClosedBy.equals(player.getName().toString())) {
+					try {
 						Thread.sleep(100);
-					} catch (InterruptedException e)
-					{
+					} catch (InterruptedException e) {
 						Thread.currentThread().interrupt();
 						LOGGER.error("Thread interrupted while waiting for chest to close", e);
 					}
 				}
 
 				List<ItemStack> itemsAfter = Utils.getItems((LootableContainerBlockEntity) blockEntity);
-				if(secondChest != null)
+				if (secondChest != null)
 					itemsAfter.addAll(Utils.getItems(secondChest));
 				List<String> itemsAfterStr = Utils.itemStackListToStrList(itemsAfter);
 				String timeStamp = Utils.getTimeStamp();
@@ -101,14 +96,14 @@ public class ChestLogs implements ModInitializer
 				List<String> itemsAdded = Utils.getChangedItems(itemsBeforeStr, itemsAfterStr);
 				List<String> itemsRemoved = Utils.getChangedItems(itemsAfterStr, itemsBeforeStr);
 
-				//LOGGER.info("Items Added: " + itemsAdded);
-				//LOGGER.info("Items Removed: " + itemsRemoved);
+				// LOGGER.info("Items Added: " + itemsAdded);
+				// LOGGER.info("Items Removed: " + itemsRemoved);
 
-				if(!itemsAdded.isEmpty() || !itemsRemoved.isEmpty())
-				{
+				if (!itemsAdded.isEmpty() || !itemsRemoved.isEmpty()) {
 					Utils.writeLog(timeStamp, player.getName().getString(), savePath.get(), itemsAdded, itemsRemoved);
 					if (secondChest != null) {
-						savePath.set(folderPaths.get(0) + File.separator + dimStr + File.separator + blockstr + " " + secondChest.getPos().getX() + " " + secondChest.getPos().getY() + " " + secondChest.getPos().getZ());
+						savePath.set(folderPaths.get(0) + File.separator + dimStr + File.separator + blockstr + " "
+								+ secondChest.getPos().getX() + " " + secondChest.getPos().getY() + " " + secondChest.getPos().getZ());
 						Utils.writeLog(timeStamp, player.getName().getString(), savePath.get(), itemsAdded, itemsRemoved);
 					}
 				}
@@ -116,47 +111,48 @@ public class ChestLogs implements ModInitializer
 			return ActionResult.PASS;
 		});
 
-		ChestClosedCallback.EVENT.register((player ->
-		{
-			chestClosedBy = player.getName().toString();
+		ChestClosedCallback.EVENT.register((player -> {
+			chestClosedBy = player.asLivingEntity().getName().toString();
 		}));
 
-		PlayerBlockBreakEvents.BEFORE.register((world, player, blockPos, blockState, blockEntity) ->
-		{
+		PlayerBlockBreakEvents.BEFORE.register((world, player, blockPos, blockState, blockEntity) -> {
 			Block block = blockState.getBlock();
-			if(!(blockEntity instanceof LootableContainerBlockEntity))
+			if (!(blockEntity instanceof LootableContainerBlockEntity))
 				return true;
 
 			String blockstr = block.getName().getString();
 			String dimStr = Utils.getDimString(world.getDimensionEntry());
-			String savePath = folderPaths.get(0) + File.separator + dimStr + File.separator + blockstr + " " + blockPos.getX() + " " + blockPos.getY() + " " + blockPos.getZ();
+			String savePath = folderPaths.get(0) + File.separator + dimStr + File.separator + blockstr + " " + blockPos.getX()
+					+ " " + blockPos.getY() + " " + blockPos.getZ();
 
 			Utils.writeMessageLog(Utils.getTimeStamp(), player.getName().getString(), savePath, "Broke " + blockstr);
-            return true;
-        });
+			return true;
+		});
 
 		BlockPlaceCallback.EVENT.register((context -> {
 			World world = context.getWorld();
 			BlockPos blockPos = context.getBlockPos();
 			BlockState blockState = world.getBlockState(blockPos);
 
-			if(blockState.getBlock() == Blocks.HOPPER)
-			{
+			if (blockState.getBlock() == Blocks.HOPPER) {
 				BlockPos chestPos = blockPos.add(0, 1, 0);
-				if(!(world.getBlockEntity(chestPos) instanceof LootableContainerBlockEntity))
+				if (!(world.getBlockEntity(chestPos) instanceof LootableContainerBlockEntity))
 					return;
 				BlockState chestState = world.getBlockState(chestPos);
 				ChestBlockEntity secondChest = Utils.getSecondChest(chestState, world.getBlockEntity(chestPos), world);
 
 				String blockstr = chestState.getBlock().getName().getString();
 				String dimStr = Utils.getDimString(world.getDimensionEntry());
-				String savePath = folderPaths.get(0) + File.separator + dimStr + File.separator + blockstr + " " + chestPos.getX() + " " + chestPos.getY() + " " + chestPos.getZ();
+				String savePath = folderPaths.get(0) + File.separator + dimStr + File.separator + blockstr + " "
+						+ chestPos.getX() + " " + chestPos.getY() + " " + chestPos.getZ();
 
-				Utils.writeMessageLog(Utils.getTimeStamp(), context.getPlayer().getName().getString(), savePath, "Placed Hopper underneath container");
-				if(secondChest != null)
-				{
-					savePath = folderPaths.get(0) + File.separator + dimStr + File.separator + blockstr + " " + secondChest.getPos().getX() + " " + secondChest.getPos().getY() + " " + secondChest.getPos().getZ();
-					Utils.writeMessageLog(Utils.getTimeStamp(), context.getPlayer().getName().getString(), savePath, "Placed Hopper underneath container");
+				Utils.writeMessageLog(Utils.getTimeStamp(), context.getPlayer().getName().getString(), savePath,
+						"Placed Hopper underneath container");
+				if (secondChest != null) {
+					savePath = folderPaths.get(0) + File.separator + dimStr + File.separator + blockstr + " "
+							+ secondChest.getPos().getX() + " " + secondChest.getPos().getY() + " " + secondChest.getPos().getZ();
+					Utils.writeMessageLog(Utils.getTimeStamp(), context.getPlayer().getName().getString(), savePath,
+							"Placed Hopper underneath container");
 				}
 			}
 		}));

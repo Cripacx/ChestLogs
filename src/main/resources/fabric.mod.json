@@ -4,9 +4,7 @@
 	"version": "${version}",
 	"name": "Chest Logs",
 	"description": "Log all chests on your server to catch the thieves",
-	"authors": [
-		"Aguga2201"
-	],
+	"authors": ["Aguga2201"],
 	"contact": {
 		"homepage": "https://github.com/Aguga2201/ChestLog",
 		"sources": "https://github.com/Aguga2201/ChestLog",
@@ -16,16 +14,12 @@
 	"icon": "assets/chest-log/icon.png",
 	"environment": "*",
 	"entrypoints": {
-		"main": [
-          "com.aguga.ChestLogs"
-		]
+		"main": ["com.aguga.ChestLogs"]
 	},
-	"mixins": [
-		"chest-logs.mixins.json"
-	],
+	"mixins": ["chest-logs.mixins.json"],
 	"depends": {
 		"fabricloader": ">=0.16.9",
-		"minecraft": ">=1.21.3 <=1.21.4",
+		"minecraft": ">=1.21.3 <=1.21.10",
 		"java": ">=21",
 		"fabric-api": "*"
 	},
